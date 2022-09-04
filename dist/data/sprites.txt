@@ -1,0 +1,9 @@
+green_frog front 0
+green_car front 0
+green_log front 0
+red_frog front 1
+red_car front 1
+red_log front 1
+yellow_frog front 2
+yellow_car front 2
+yellow_log front 2
