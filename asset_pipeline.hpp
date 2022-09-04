@@ -6,3 +6,4 @@
 
 void generate_palette(PPU466 &ppu);
 void generate_sprites(PPU466 &ppu);
+void generate_background(PPU466 &ppu);

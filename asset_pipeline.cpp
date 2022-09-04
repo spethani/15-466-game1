@@ -9,9 +9,6 @@
 #include <iostream>
 #include <fstream>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/ext.hpp"
-
 void generate_palette(PPU466 &ppu) {
     // Load palette file
     std::string palette_file = data_path("data/palette.png");
@@ -24,11 +21,9 @@ void generate_palette(PPU466 &ppu) {
     if (palette_size != glm::uvec2(palette_width, palette_height)) {
         std::cerr << "File " << palette_file << " is not of expected size (8 x 4) " << std::endl;
     }
-    std::cout << glm::to_string(palette_size) << std::endl;
 
     // Set PPU palette to the palette that was loaded
     for (uint8_t i = 0; i < palette_height * palette_width; i += palette_width) {
-        std::cout << glm::to_string(palette[i + 3]) << std::endl;
         ppu.palette_table[i / palette_width] = {
             palette[i],
             palette[i + 1],
@@ -38,8 +33,8 @@ void generate_palette(PPU466 &ppu) {
     }
 }
 
-void generate_sprite(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_t palette_index, uint8_t sprite_index, std::string front_or_back) {
-	auto palette_table_entry = ppu.palette_table[palette_index];
+void generate_tile(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_t palette_index) {
+    auto palette_table_entry = ppu.palette_table[palette_index];
 
     // Load tile
     std::string tile_file = data_path(filename);
@@ -83,6 +78,10 @@ void generate_sprite(PPU466 &ppu, std::string filename, uint8_t tile_index, uint
     // Finish creation of tile
     ppu.tile_table[tile_index].bit0 = tile_bit0;
     ppu.tile_table[tile_index].bit1 = tile_bit1;
+}
+
+void generate_sprite(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_t palette_index, uint8_t sprite_index, std::string front_or_back) {
+	generate_tile(ppu, filename, tile_index, palette_index);
 
     // Create the sprite
     ppu.sprites[sprite_index].x = sprite_index * 20;
@@ -95,8 +94,6 @@ void generate_sprites(PPU466 &ppu) {
     std::ifstream file_stream;
     std::string sprite_map = data_path("data/sprites.txt");
     file_stream.open(sprite_map);
-
-    
 
     uint8_t tile_index = 0;
     uint8_t sprite_index = 0;
@@ -139,4 +136,13 @@ void generate_sprites(PPU466 &ppu) {
         sprite_index++;
     }
     
+}
+
+void generate_background(PPU466 &ppu) {
+    uint8_t tile_index = 16;
+    uint8_t palette_index = 3;
+    generate_tile(ppu, "data/background.png", tile_index, palette_index);
+    for (uint16_t i = 0; i < ppu.BackgroundWidth * ppu.BackgroundHeight; i++) {
+        ppu.background[i] = (palette_index << 8) + tile_index;
+    }
 }
