@@ -15,6 +15,8 @@
 # include <unordered_map>
 
 std::unordered_map<std::string, std::vector<uint8_t>> sprite_indices;
+std::vector<float> sprite_xs(64);
+std::vector<float> sprite_ys(64);
 
 PlayMode::PlayMode() {
 
@@ -27,20 +29,29 @@ PlayMode::PlayMode() {
 		std::vector<uint8_t> green_cars = sprite_indices["data/green_car.png"];
 		std::vector<uint8_t> yellow_cars = sprite_indices["data/yellow_car.png"];
 		for (uint8_t i = 0; i < red_cars.size() && i < green_cars.size() && i < yellow_cars.size(); i++) {
-			uint8_t x_start = 20;
-			uint8_t x_offset = 60;
-			uint8_t y_start = 20;
-			uint8_t y_offset = 40;
+			float x_start = 20.0f;
+			float x_offset = 80.0f;
+			float y_start = 20.0f;
+			float y_offset = 40.0f;
 			
 			uint8_t red_car_idx = red_cars[i];
 			uint8_t green_car_idx = green_cars[i];
 			uint8_t yellow_car_idx = yellow_cars[i];
-			ppu.sprites[red_car_idx].x = x_start;
-			ppu.sprites[red_car_idx].y = i * y_offset + y_start;
-			ppu.sprites[green_car_idx].x = x_start + x_offset;
-			ppu.sprites[green_car_idx].y = i * y_offset + y_start;
-			ppu.sprites[yellow_car_idx].x = x_start + 2 * x_offset;
-			ppu.sprites[yellow_car_idx].y = i * y_offset + y_start;
+
+			sprite_xs[red_car_idx] = x_start;
+			sprite_ys[red_car_idx] = i * y_offset + y_start;
+			ppu.sprites[red_car_idx].x = (uint8_t) sprite_xs[red_car_idx];
+			ppu.sprites[red_car_idx].y = (uint8_t) sprite_ys[red_car_idx];
+
+			sprite_xs[green_car_idx] = x_start + x_offset;
+			sprite_ys[green_car_idx] = i * y_offset + y_start;
+			ppu.sprites[green_car_idx].x = (uint8_t) sprite_xs[green_car_idx];
+			ppu.sprites[green_car_idx].y = (uint8_t) sprite_ys[green_car_idx];
+
+			sprite_xs[yellow_car_idx] = x_start + 2 * x_offset;
+			sprite_ys[yellow_car_idx] = i * y_offset + y_start;
+			ppu.sprites[yellow_car_idx].x = (uint8_t) sprite_xs[yellow_car_idx];
+			ppu.sprites[yellow_car_idx].y = (uint8_t) sprite_ys[yellow_car_idx];
 		}
 	}
 
@@ -118,6 +129,24 @@ void PlayMode::update(float elapsed) {
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+
+	{// Update car positions
+		std::vector<uint8_t> red_cars = sprite_indices["data/red_car.png"];
+		std::vector<uint8_t> green_cars = sprite_indices["data/green_car.png"];
+		std::vector<uint8_t> yellow_cars = sprite_indices["data/yellow_car.png"];
+		for (uint8_t i = 0; i < red_cars.size() && i < green_cars.size() && i < yellow_cars.size(); i++) {
+			float car_speed = i * 30.0f + 30.0f;
+			uint8_t red_car_idx = red_cars[i];
+			uint8_t green_car_idx = green_cars[i];
+			uint8_t yellow_car_idx = yellow_cars[i];
+			sprite_xs[red_car_idx] += car_speed * elapsed;
+			sprite_xs[green_car_idx] += car_speed * elapsed;
+			sprite_xs[yellow_car_idx] += car_speed * elapsed;
+			ppu.sprites[red_car_idx].x = (int8_t)(sprite_xs[red_car_idx]);
+			ppu.sprites[green_car_idx].x = (int8_t)(sprite_xs[green_car_idx]);
+			ppu.sprites[yellow_car_idx].x = (int8_t)(sprite_xs[yellow_car_idx]);
+		}
+	}
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
