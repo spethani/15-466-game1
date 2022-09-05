@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <unordered_map>
+
 void generate_palette(PPU466 &ppu) {
     // Load palette file
     std::string palette_file = data_path("data/palette.png");
@@ -80,7 +82,7 @@ void generate_tile(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_
     ppu.tile_table[tile_index].bit1 = tile_bit1;
 }
 
-void generate_sprites(PPU466 &ppu) {
+void generate_sprites(PPU466 &ppu, std::unordered_map<std::string, std::vector<uint8_t>> &sprite_indices) {
     std::ifstream file_stream;
     std::string sprite_map = data_path("data/sprites.txt");
     file_stream.open(sprite_map);
@@ -88,7 +90,7 @@ void generate_sprites(PPU466 &ppu) {
     uint8_t tile_index = 0;
     uint8_t sprite_index = 0;
 
-    auto get_sprite_info_and_generate = [&tile_index, &sprite_index](PPU466 &ppu, std::string line) {
+    auto get_sprite_info_and_generate = [&tile_index, &sprite_index, &sprite_indices](PPU466 &ppu, std::string line) {
         // Format of txt file: name of png, front or back, number of sprites, palette index
 
         // Get name of png
@@ -135,7 +137,11 @@ void generate_sprites(PPU466 &ppu) {
         generate_tile(ppu, sprite_name, tile_index, palette_index);
 
         // Generate sprites associated with tile
+        std::vector<uint8_t> indices;
+        sprite_indices[sprite_name] = indices;
         for (uint8_t i = 0; i < num_sprites; i++) {
+            sprite_indices[sprite_name].push_back(sprite_index);
+            
             ppu.sprites[sprite_index].x = i * 60;
             ppu.sprites[sprite_index].y = tile_index * 20;
             ppu.sprites[sprite_index].index = tile_index;
