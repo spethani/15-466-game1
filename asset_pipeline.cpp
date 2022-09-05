@@ -80,16 +80,6 @@ void generate_tile(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_
     ppu.tile_table[tile_index].bit1 = tile_bit1;
 }
 
-void generate_sprite(PPU466 &ppu, std::string filename, uint8_t tile_index, uint8_t palette_index, uint8_t sprite_index, std::string front_or_back) {
-	generate_tile(ppu, filename, tile_index, palette_index);
-
-    // Create the sprite
-    ppu.sprites[sprite_index].x = sprite_index * 20;
-    ppu.sprites[sprite_index].y = 0;
-    ppu.sprites[sprite_index].index = tile_index;
-    ppu.sprites[sprite_index].attributes = front_or_back == "front" ? palette_index : (1 << 7) + palette_index;
-}
-
 void generate_sprites(PPU466 &ppu) {
     std::ifstream file_stream;
     std::string sprite_map = data_path("data/sprites.txt");
@@ -98,7 +88,10 @@ void generate_sprites(PPU466 &ppu) {
     uint8_t tile_index = 0;
     uint8_t sprite_index = 0;
 
-    auto get_sprite_info = [&tile_index, &sprite_index](PPU466 &ppu, std::string line) {
+    auto get_sprite_info_and_generate = [&tile_index, &sprite_index](PPU466 &ppu, std::string line) {
+        // Format of txt file: name of png, front or back, number of sprites, palette index
+
+        // Get name of png
         std::string sprite_name = "";
         uint16_t index = 0;
         for (index = 0; index < line.size(); index++) {
@@ -111,6 +104,7 @@ void generate_sprites(PPU466 &ppu) {
             }
         }
 
+        // Get front or back info
         std::string front_or_back = "";
         for (index = index + 1; index < line.size(); index++) {
             if (line[index] != ' ') {
@@ -121,19 +115,42 @@ void generate_sprites(PPU466 &ppu) {
             }
         }
 
-        uint8_t palette_index = line[index + 1] - '0';
+        // Get number of sprites
+        std::string num_sprites_str = "";
+        for (index = index + 1; index < line.size(); index++) {
+            if (line[index] != ' ') {
+                num_sprites_str += line[index];
+            }
+            else {
+                break;
+            }
+        }
+        uint8_t num_sprites = (uint8_t)(std::stoi(num_sprites_str));
 
-        generate_sprite(ppu, sprite_name, tile_index, palette_index, sprite_index, front_or_back);
+        // Get palette index
+        uint8_t palette_index = line[index + 1] - '0';
+        index++;
+
+        // Generate tile
+        generate_tile(ppu, sprite_name, tile_index, palette_index);
+
+        // Generate sprites associated with tile
+        for (uint8_t i = 0; i < num_sprites; i++) {
+            ppu.sprites[sprite_index].x = i * 60;
+            ppu.sprites[sprite_index].y = tile_index * 20;
+            ppu.sprites[sprite_index].index = tile_index;
+            ppu.sprites[sprite_index].attributes = front_or_back == "front" ? palette_index : (1 << 7) + palette_index;
+            sprite_index++;
+        }
+
+        tile_index++;
     };
 
     while (!file_stream.eof()) {
         std::string line;
         std::getline(file_stream, line);
         
-        get_sprite_info(ppu, line);
-
-        tile_index++;
-        sprite_index++;
+        get_sprite_info_and_generate(ppu, line);
     }
     
 }
