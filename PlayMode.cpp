@@ -17,9 +17,14 @@
 // for making sure car x pos <= 250
 #include <cmath>
 
+// for keeping track of frog color
+#include<string>
+
 std::unordered_map<std::string, std::vector<uint8_t>> sprite_indices;
 std::vector<float> sprite_xs(64);
 std::vector<float> sprite_ys(64);
+float time_since_frog_change;
+std::string frog_color;
 
 PlayMode::PlayMode() {
 
@@ -59,6 +64,7 @@ PlayMode::PlayMode() {
 	}
 
 	{// Position the frogs on the background
+		frog_color = "green";
 		uint8_t green_frog_idx = sprite_indices["data/green_frog.png"][0];
 		uint8_t red_frog_idx = sprite_indices["data/red_frog.png"][0];
 		uint8_t yellow_frog_idx = sprite_indices["data/yellow_frog.png"][0];
@@ -69,6 +75,9 @@ PlayMode::PlayMode() {
 		ppu.sprites[yellow_frog_idx].x = 250;
 		ppu.sprites[yellow_frog_idx].y = 250;
 	}
+
+	// Keep track of time elapsed since frog last changed color
+	time_since_frog_change = 0.0f;
 
 }
 
@@ -114,60 +123,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::check_collisions(std::string frog_color) {
-	const uint8_t car_height = 5;
-	const uint8_t car_width = 8;
-	float min_player_x = player_at.x;
-	float max_player_x = player_at.x + 8;
-	float min_player_y = player_at.y;
-	float max_player_y = player_at.y + 8;
-	// Check collisions for red cars
-	for (uint8_t red_car_idx : sprite_indices["data/red_car.png"]) {
-		float min_car_x = sprite_xs[red_car_idx];
-		float max_car_x = sprite_xs[red_car_idx] + car_width;
-		float min_car_y = sprite_ys[red_car_idx];
-		float max_car_y = sprite_ys[red_car_idx] + car_height;
-		if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
-			&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
-			if (frog_color != "red") { // If the frog is same color as car, no collision
-				player_at.x = 0;
-				player_at.y = 0;
-			}
-			break;
-		}
-	}
-	// Check collisions for green cars
-	for (uint8_t green_car_idx : sprite_indices["data/green_car.png"]) {
-		float min_car_x = sprite_xs[green_car_idx];
-		float max_car_x = sprite_xs[green_car_idx] + car_width;
-		float min_car_y = sprite_ys[green_car_idx];
-		float max_car_y = sprite_ys[green_car_idx] + car_height;
-		if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
-			&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
-			if (frog_color != "green") {
-				player_at.x = 0;
-				player_at.y = 0;
-			}
-			break;
-		}
-	}
-	// Check collisions for yellow cars
-	for (uint8_t yellow_car_idx : sprite_indices["data/yellow_car.png"]) {
-		float min_car_x = sprite_xs[yellow_car_idx];
-		float max_car_x = sprite_xs[yellow_car_idx] + car_width;
-		float min_car_y = sprite_ys[yellow_car_idx];
-		float max_car_y = sprite_ys[yellow_car_idx] + car_height;
-		if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
-			&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
-			if (frog_color != "yellow") {
-				player_at.x = 0;
-				player_at.y = 0;
-			}
-			break;
-		}
-	}
-}
-
 void PlayMode::update(float elapsed) {
 
 	//slowly rotates through [0,1):
@@ -206,7 +161,70 @@ void PlayMode::update(float elapsed) {
 		}
 	}
 
-	check_collisions("green");
+	{// Check collisions for cars
+		const uint8_t car_height = 5;
+		const uint8_t car_width = 8;
+		float min_player_x = player_at.x;
+		float max_player_x = player_at.x + 8;
+		float min_player_y = player_at.y;
+		float max_player_y = player_at.y + 8;
+		// Check collisions for red cars
+		for (uint8_t red_car_idx : sprite_indices["data/red_car.png"]) {
+			float min_car_x = sprite_xs[red_car_idx];
+			float max_car_x = sprite_xs[red_car_idx] + car_width;
+			float min_car_y = sprite_ys[red_car_idx];
+			float max_car_y = sprite_ys[red_car_idx] + car_height;
+			if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
+				&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
+				if (frog_color != "red") { // If the frog is same color as car, no collision
+					player_at.x = 0;
+					player_at.y = 0;
+				}
+				break;
+			}
+		}
+		// Check collisions for green cars
+		for (uint8_t green_car_idx : sprite_indices["data/green_car.png"]) {
+			float min_car_x = sprite_xs[green_car_idx];
+			float max_car_x = sprite_xs[green_car_idx] + car_width;
+			float min_car_y = sprite_ys[green_car_idx];
+			float max_car_y = sprite_ys[green_car_idx] + car_height;
+			if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
+				&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
+				if (frog_color != "green") {
+					player_at.x = 0;
+					player_at.y = 0;
+				}
+				break;
+			}
+		}
+		// Check collisions for yellow cars
+		for (uint8_t yellow_car_idx : sprite_indices["data/yellow_car.png"]) {
+			float min_car_x = sprite_xs[yellow_car_idx];
+			float max_car_x = sprite_xs[yellow_car_idx] + car_width;
+			float min_car_y = sprite_ys[yellow_car_idx];
+			float max_car_y = sprite_ys[yellow_car_idx] + car_height;
+			if ((max_car_x >= min_player_x && max_player_x >= min_car_x) 
+				&& (max_car_y >= min_player_y && max_player_y >= min_car_y)) {
+				if (frog_color != "yellow") {
+					player_at.x = 0;
+					player_at.y = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	{// Check for win conditions
+		if (player_at.y > 240) {
+			std::cout << "You Win! Froggo has passed safely." << std::endl;
+			std::cout << "Feel free to keep playing." << std::endl;
+			player_at.y -= 240;
+		}
+	}
+
+	// Update time since frog change
+	time_since_frog_change += elapsed;
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -224,9 +242,48 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	ppu.background_position.x = int32_t(-0.5f * player_at.x);
 	ppu.background_position.y = int32_t(-0.5f * player_at.y);
 
-	//player sprite:
-	ppu.sprites[0].x = int8_t(player_at.x);
-	ppu.sprites[0].y = int8_t(player_at.y);
+	{//decide frog color
+		const float time_for_color = 2.0f;
+		if (time_since_frog_change > time_for_color) {
+			if (frog_color == "green") {
+				frog_color = "yellow";
+			}
+			else if (frog_color == "yellow") {
+				frog_color = "red";
+			}
+			else if (frog_color == "red") {
+				frog_color = "green";
+			}
+			time_since_frog_change -= time_for_color;
+		}
+	}
+
+	{//player sprite
+		if (frog_color == "green") {
+			ppu.sprites[0].x = int8_t(player_at.x);
+			ppu.sprites[0].y = int8_t(player_at.y);
+			ppu.sprites[1].x = 250;
+			ppu.sprites[1].y = 250;
+			ppu.sprites[2].x = 250;
+			ppu.sprites[2].y = 250;
+		}
+		else if (frog_color == "yellow") {
+			ppu.sprites[2].x = int8_t(player_at.x);
+			ppu.sprites[2].y = int8_t(player_at.y);
+			ppu.sprites[0].x = 250;
+			ppu.sprites[0].y = 250;
+			ppu.sprites[1].x = 250;
+			ppu.sprites[1].y = 250;
+		}
+		else if (frog_color == "red") {
+			ppu.sprites[1].x = int8_t(player_at.x);
+			ppu.sprites[1].y = int8_t(player_at.y);
+			ppu.sprites[0].x = 250;
+			ppu.sprites[0].y = 250;
+			ppu.sprites[2].x = 250;
+			ppu.sprites[2].y = 250;
+		}
+	}
 
 	//car sprites:
 	{
