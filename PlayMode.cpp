@@ -9,7 +9,7 @@
 #include <random>
 
 //for processing png images
-# include "asset_pipeline.hpp"
+# include "generate_ppu.hpp"
 
 // for keeping track of sprite indices
 # include <unordered_map>
@@ -133,7 +133,8 @@ void PlayMode::update(float elapsed) {
 	constexpr float PlayerSpeed = 30.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
-	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
+	// don't let player go down further than bottom of screen
+	if (down.pressed) player_at.y = fmax(player_at.y - PlayerSpeed * elapsed, 0.0f);
 	if (up.pressed) player_at.y += PlayerSpeed * elapsed;
 
 	//reset button press counters:
